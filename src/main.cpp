@@ -27,7 +27,12 @@ int main(int argc, char* argv[]) {
         std::string filename = argv[2];
         repo.remove(filename);
     } else if (command == "commit") {
-        repo.commit();
+        if (argc < 3) {
+            std::cerr << "Usage: syvc commit <message>\n";
+            return 1;
+        }
+        std::string message = argv[2];
+        repo.commit(message);
     } else {
         std::cerr << "Unknown command: " << command << "\n";
         return 1;

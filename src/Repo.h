@@ -1,5 +1,6 @@
-#ifndef GIT_REPO_H
-#define GIT_REPO_H
+#pragma once
+#ifndef SYVC_REPO_H
+#define SYVC_REPO_H
 
 #include <string>
 
@@ -8,7 +9,7 @@ public:
     void init();
     void add(const std::string& filename);
     void remove(const std::string& filename);
-    void commit();
+    void commit(const std::string& message);
 };
 
 #endif
