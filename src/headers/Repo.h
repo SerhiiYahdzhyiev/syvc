@@ -1,8 +1,4 @@
 #pragma once
-#ifndef SYVC_REPO_H
-#define SYVC_REPO_H
-
-#include <string>
 
 class Repo {
 public:
@@ -10,6 +6,5 @@ public:
     void add(const std::string& filename);
     void remove(const std::string& filename);
     void commit(const std::string& message);
+    void displayCommitLog() const;
 };
-
-#endif

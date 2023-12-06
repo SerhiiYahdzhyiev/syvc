@@ -1,8 +1,4 @@
-#ifndef SYVC_COMMIT_H
-#define SYVC_COMMIT_H
-
-#include <string>
-#include <vector>
+#pragma once
 
 class Commit {
 public:
@@ -11,14 +7,10 @@ public:
     const std::string& getHash() const;
     void addFile(const std::string& filename);
     void createCommit();
+    static std::string loadCommitMessage(const std::string& commitHash);
 
 private:
     std::string message;
     std::string hash;
     std::vector<std::string> stagingArea;
-
-    // Helper function to generate SHA-256 hash
-    std::string generateHash(const std::string& input) const;
 };
-
-#endif

@@ -1,5 +1,5 @@
-#include <iostream>
-#include "Repo.h"
+#include "headers/Utils.h"
+#include "headers/Repo.h"
 
 int main(int argc, char* argv[]) {
     if (argc < 2) {
@@ -33,6 +33,8 @@ int main(int argc, char* argv[]) {
         }
         std::string message = argv[2];
         repo.commit(message);
+    } else if (command == "log") {
+        repo.displayCommitLog();
     } else {
         std::cerr << "Unknown command: " << command << "\n";
         return 1;
