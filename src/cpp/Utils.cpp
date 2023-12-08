@@ -54,3 +54,40 @@ void printError(const std::string& message) {
   std::cerr << message << "\n";
   std::cerr << "Type 'syvc help' for more information";
 }
+
+void removeFolderContentsRecursively(const std::string& path) {
+    for (const auto& entry : fs::directory_iterator(path)) {
+        try {
+            if (fs::is_directory(entry.status())) {
+                removeFolderContentsRecursively(entry.path().string());
+            }
+
+            fs::remove(entry.path());
+        } catch (const std::exception& e) {
+            std::cerr << "Error removing " << entry.path() << ": " << e.what() << std::endl;
+            return;
+        }
+    }
+}
+
+void copyFolderContentsRecursively(const fs::path& source, const fs::path& destination) {
+    try {
+        if (!fs::exists(destination)) {
+          std::cerr << "Failed to copy diff to commit, destination folder does not exist!" << "\n";
+          return;
+        }
+
+        for (const auto& entry : fs::directory_iterator(source)) {
+            const fs::path currentPath = entry.path();
+            const fs::path newPath = destination / currentPath.filename();
+
+            if (fs::is_directory(currentPath)) {
+                copyFolderContentsRecursively(currentPath, newPath);
+            } else {
+                fs::copy(currentPath, newPath, fs::copy_options::overwrite_existing);
+            }
+        }
+    } catch (const std::exception& e) {
+        std::cerr << "Error copying directory: " << e.what() << std::endl;
+    }
+}
