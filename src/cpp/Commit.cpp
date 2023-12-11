@@ -57,11 +57,6 @@ const std::string& Commit::getHash() const {
     return this->_hash;
 }
 
-bool Commit::checkDiff(const std::string& filePath) {
-    //TODO: Realize
-    return false;
-}
-
 void Commit::save() {
     std::vector<fs::path> staged = this->_getStaged(); 
     if (staged.empty()) {

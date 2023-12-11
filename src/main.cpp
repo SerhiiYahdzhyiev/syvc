@@ -37,9 +37,6 @@ int main(int argc, char* argv[]) {
         case LOG:
             repo.displayCommitLog();
             break;
-        case STATUS:
-            //TODO: Realize
-            break;
         case COMMIT:
             if (argc < 3) {
                 printError("Usage: syvc commit <message>\n");
@@ -50,7 +47,14 @@ int main(int argc, char* argv[]) {
                 break;
             }
         case REVERT:
-            break;
+            if (argc < 3) {
+                printError("Usage: syvc revert <commit_hash>\n");
+                return 1;
+            } else {
+                std::string commitHash = argv[2];
+                repo.revert(commitHash);
+                break;
+            }
         case HELP:
             printHelp();
             break;

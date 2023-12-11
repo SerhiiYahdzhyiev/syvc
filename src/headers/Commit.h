@@ -10,9 +10,6 @@ public:
     void save();
 
     static std::string loadCommitMessage(const std::string& commitHash);
-
-    bool checkDiff(const std::string& filePath);
-
 private:
     std::string _message;
     std::string _hash;

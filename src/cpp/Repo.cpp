@@ -2,9 +2,29 @@
 #include "headers/Repo.h"
 #include "headers/Commit.h"
 
+void Repo::_removeCommit(const std::string& hash) {
+    std::string commitFolderPath = Constants::COMMITS_FOLDER_PATH + "/" + hash;
+    removeFolderContentsRecursively(commitFolderPath);
+}
+
+void Repo::_removeCommits(std::vector<std::string>* commitHashesToRemove) {
+    for (const std::string& hash: *commitHashesToRemove) {
+        this->_removeCommit(hash);
+    }
+}
+
 void Repo::_updateHead(const std::string& lastCommitHash) {
+    std::ofstream headFile(Constants::HEAD_PATH, std::ios::app);
+    headFile << lastCommitHash << std::endl;
+    headFile.close();
+}
+
+void Repo::_updateHead(std::vector<std::string>* newHashes) {
     std::ofstream headFile(Constants::HEAD_PATH, std::ios::trunc);
-    headFile << lastCommitHash;
+    for (const std::string& line : *newHashes) {
+        headFile << line << std::endl;
+    }
+    headFile.close();
 }
 
 void Repo::_createConfigFile() {
@@ -32,7 +52,7 @@ void Repo::_createTrackedFile() {
 }
 
 void Repo::_createHeadFile() {
-    std::ofstream headFile(Constants::TRACKED_PATH);
+    std::ofstream headFile(Constants::HEAD_PATH);
     if (!headFile.is_open()) {
         std::cerr << "Error creating head file.\n";
         return;
@@ -42,7 +62,7 @@ void Repo::_createHeadFile() {
 }
 
 void Repo::_createStageFolder() {
-    if (!fs::create_directory(Constants::COMMITS_FOLDER_PATH)) {
+    if (!fs::create_directory(Constants::STAGE_FOLDER_PATH)) {
         std::cerr << "Error creating staging directory.\n";
         return;
     }
@@ -61,10 +81,6 @@ void Repo::_createMetaFolder() {
         return;
     }
 }
-bool Repo::_checkDiff(const std::string& path) {
-    //TODO: Realize
-    return true;
-}
 
 bool Repo::_isTracked(const std::string& path) {
     std::vector<fs::path> tracked = this->_getTrackedPathList();
@@ -80,6 +96,24 @@ bool Repo::_inStaged(const std::string& path) {
     fs::path stagedFilePath = fs::path(Constants::STAGE_FOLDER_PATH);
 
     return fs::exists(stagedFilePath);
+}
+
+std::vector<std::string> Repo::_getCommitHashesHistory() {
+    std::vector<std::string> hashes;
+    std::ifstream headFile(Constants::HEAD_PATH);
+    
+    if (!headFile.is_open()) {
+        std::cerr << "Error reading head file.\n";
+        return hashes;
+    }
+    
+    std::string path;
+    while (std::getline(headFile, path)) {
+        hashes.push_back(path);
+    }
+
+    headFile.close();
+    return hashes;
 }
 
 std::vector<fs::path> Repo::_getTrackedPathList() {
@@ -98,7 +132,6 @@ std::vector<fs::path> Repo::_getTrackedPathList() {
 
     trackedFile.close();
     return pathList;
-    
 }
 
 void Repo::init() {
@@ -127,31 +160,25 @@ void Repo::add(const std::string& path) {
         fs::directory_iterator it(path);
         const fs::directory_iterator end;
         while (it != end) {
-            this->add(path + it->path().string());
+            this->add(it->path().string());
             ++it;
         }
+        return;
     } 
     
     fs::path repoPath = fs::path(Constants::REPO_META_FOLDER_NAME);
-    fs::path newTrackedFilePath = fs::path(repoPath / Constants::STAGE_FOLDER_NAME / fs::path(path).filename());
-    
-    if (this->_inStaged(path) || this->_isTracked(path)) {
-        bool hasDiff = this->_checkDiff(path);
-        if (hasDiff) {
-            fs::copy(path, newTrackedFilePath, fs::copy_options::update_existing);
-        } else {
-            std::cerr << "No changes to stage in the file: " << path << "\n";
-        }
-    } else {
-        if (!this->_isTracked(path)) {
-            std::ofstream trackedFile(Constants::TRACKED_PATH, std::ios::app);
-            trackedFile << newTrackedFilePath << "\n";
+    fs::path newTrackedFilePath = fs::path(repoPath / Constants::STAGE_FOLDER_NAME / fs::path(path));
 
-            fs::copy(path, newTrackedFilePath, fs::copy_options::update_existing);
+    fs::create_directories(newTrackedFilePath.parent_path());
+
+    if (!this->_isTracked(path)) {
+        std::ofstream trackedFile(Constants::TRACKED_PATH, std::ios::app);
+        trackedFile << path << "\n";
     }
+    
+    fs::copy(path, newTrackedFilePath, fs::copy_options::update_existing);
 
     std::cout << "Staged '" << path << "'\n";
-    }
 }
 
 void Repo::remove(const std::string& path) {
@@ -184,15 +211,34 @@ void Repo::commit(const std::string& message) {
     this->_updateHead(commit.getHash());
 }
 
-void Repo::displayCommitLog() const {
+void Repo::revert(const std::string& commitHash) {
+    std::vector<std::string> hashes = this->_getCommitHashesHistory();
+    
+    auto it = std::find(hashes.begin(), hashes.end(), commitHash);
+
+    if (it == hashes.end()) {
+        std::cerr << "Failed to find commit with hash " << commitHash << " in repo's history" << "\n"; 
+    } else {
+        std::vector<std::string> commitHashesToRemove(++it, hashes.end());
+        std::vector<std::string> newHashes(hashes.begin(), it);
+        
+        this->_removeCommits(&commitHashesToRemove);
+        this->_updateHead(&newHashes);
+
+        fs::path sourcePath = fs::path(Constants::COMMITS_FOLDER_PATH + "/" + commitHash + "/" + Constants::COMMIT_DIFF_FOLDER_NAME);
+        fs::path destPath = fs::path(".");
+        
+        copyFolderContentsRecursively(sourcePath, destPath);
+    }
+}
+
+void Repo::displayCommitLog() {
     std::cout << "Commit Log:\n";
 
-    for (const auto& entry : fs::directory_iterator(Constants::COMMITS_FOLDER_PATH)) {
-        if (entry.is_directory()) {
-            std::string commitHash = entry.path().filename().string();
-            std::string commitMessage = Commit::loadCommitMessage(commitHash);
+    std::vector<std::string> history = this->_getCommitHashesHistory();
 
-            std::cout << "[" << commitHash << "] " << commitMessage << "\n";
-        }
+    for (const std::string& hash : history) { 
+        std::string message = Commit::loadCommitMessage(hash);
+        std::cout << hash << " " << message << "\n";
     }
 }

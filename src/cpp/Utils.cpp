@@ -21,7 +21,6 @@ Command parseCommand(const std::string& command) {
     {"add", ADD},
     {"rm", REMOVE},
     {"log", LOG},
-    {"status", STATUS},
     {"commit", COMMIT},
     {"revert", REVERT},
     {"help", HELP}
@@ -44,7 +43,6 @@ void printHelp() {
   std::cout << "  add <file>            Add a file to the syvc repository\n";
   std::cout << "  rm <file>             Remove a file from the syvc repository\n";
   std::cout << "  log                   Display the commit log\n";
-  std::cout << "  status                Show the status of the syvc repository\n";
   std::cout << "  commit <message>      Commit changes to the syvc repository\n";
   std::cout << "  revert                Revert changes in the syvc repository\n";
   std::cout << "  help                  Display this help information\n";
@@ -73,8 +71,8 @@ void removeFolderContentsRecursively(const std::string& path) {
 void copyFolderContentsRecursively(const fs::path& source, const fs::path& destination) {
     try {
         if (!fs::exists(destination)) {
-          std::cerr << "Failed to copy diff to commit, destination folder does not exist!" << "\n";
-          return;
+            std::cerr << "Failed to copy, destination folder does not exist!" << "\n";
+            return;
         }
 
         for (const auto& entry : fs::directory_iterator(source)) {
@@ -82,6 +80,7 @@ void copyFolderContentsRecursively(const fs::path& source, const fs::path& desti
             const fs::path newPath = destination / currentPath.filename();
 
             if (fs::is_directory(currentPath)) {
+                fs::create_directories(newPath);
                 copyFolderContentsRecursively(currentPath, newPath);
             } else {
                 fs::copy(currentPath, newPath, fs::copy_options::overwrite_existing);
