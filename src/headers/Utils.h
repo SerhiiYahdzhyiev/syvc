@@ -12,10 +12,13 @@
 #include <algorithm>
 #include <stdexcept>
 
-#include "headers/Constants.h"
-#include "headers/Command.h"
+#include "./Constants.h"
+#include "./Command.h"
 
 namespace fs = std::filesystem;
+
+#define logError(message) std::cerr << message << "\n"
+#define printLine(line) std::cout << line << "\n"
 
 std::string getHashFrom(const std::string& input);
 void printHelp();
