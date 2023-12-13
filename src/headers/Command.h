@@ -5,7 +5,6 @@ enum Command {
   ADD,
   REMOVE,
   LOG,
-  STATUS,
   COMMIT,
   REVERT,
   HELP,
